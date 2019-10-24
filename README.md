@@ -27,4 +27,4 @@ $ sh build.sh
 
 
 
-if you have a question, mail me- gnudles@nana.co.il
+if you have any further question, just ask :)
