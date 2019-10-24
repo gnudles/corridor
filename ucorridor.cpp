@@ -29,11 +29,13 @@
 #define status_text_color RGBAcolor(255,188,72,0)
 #define status_down_color RGBtoInt(220,55,15)
 #define status_up_color RGBtoInt(255,198,120)
-#define button_down_color RGBtoInt(255,70,0)
+#define button_down_color RGBtoInt(255,80,40)
 #define button_up_color RGBtoInt(255,200,0)
 #define button_text_color RGBAcolor(240,250,215,0)
 #define SCRX 800
 #define SCRY 600
+#define PLACEBOARDX 80
+#define PLACEMENUX SCRX-252
 
 const int margins=8;
 const int squaresize=32;
@@ -68,6 +70,38 @@ unsigned int *pixptr;
 
 TTF_Font *font;
 
+std::string reverse(std::string text)
+{
+ std::string flip;
+ for (int i=text.size()-1;i>=0;i--)
+ {
+  flip+=text.at(i);
+ }
+ return flip;
+}
+void SetAlpha(SDL_Surface *image,Uint8 alpha)
+{
+	unsigned int i,d=(image->h)*(image->w);
+	Uint32 *impix = (Uint32*)image->pixels;
+	Uint8 val;
+	for (i=0;i<d;i++)
+	{
+			val=impix[i]>>24;
+			impix[i]-=((val*alpha)/255)<<24;
+	}
+}
+void RestoreAlpha(SDL_Surface *image,Uint8 alpha)
+{
+	unsigned int i,d=(image->h)*(image->w);
+	Uint32 *impix = (Uint32*)image->pixels;
+	Uint8 val;
+	for (i=0;i<d;i++)
+	{
+			val=impix[i]>>24;
+			impix[i]-=val<<24;
+			impix[i]+=((val*255)/(255-alpha))<<24;
+	}
+}
 
 void programexit()
 {
@@ -92,6 +126,7 @@ class Textbar
 			font = TTF_OpenFont( "resources//FreeSansBold.ttf", 22 );
 			change_text("Welcome to Corridor");
 		}
+
 		void change_text(std::string new_text)
 		{
 				draw_textarea();
@@ -120,11 +155,16 @@ class Menu
 		{
 			lastmove=0;
 		}
-		Uint16 click_event(int y,Textbar *actiontext)
+		int parsey(int y)
 		{
-			y-=42;
+		    y-=40;
 			y/=80;
 			y++;
+			return y;
+        }
+		Uint16 click_event(int y,Textbar *actiontext)
+		{
+            y=parsey(y);
 			switch(y)
 			{
 				case 1:
@@ -136,14 +176,14 @@ class Menu
 					if (fullscreen)
 						actiontext->change_text("I mustn't open links in full screen mode...");
 					else
-						system ("firefox gnudles.wmn.cc/corridor/howto.html");
+						system ("firefox resources/howto.html");
 					
 					break;
 				case 4:
 					if (fullscreen)
 						actiontext->change_text("I mustn't open links in full screen mode...");
 					else
-						system ("firefox gnudles.wmn.cc/corridor/about.html");
+						system ("firefox resources/about.html");
 					break;
 				case 5:
                      return 4;
@@ -173,9 +213,7 @@ class Menu
 				lastmove=0;
 				return;
 			}
-			y-=42;
-			y/=80;
-			y++;
+            y=parsey(y);
 			if (y!=lastmove)
 				switch(y)
 				{
@@ -205,10 +243,11 @@ class Menu
 			lastmove=y;
 		}
 		void draw_button(int y,std::string button_text){
-			SDL_Rect text_label={20,y+30,0,0};
-			grad_square(2, y,250,78,button_down_color,button_up_color );
+
+			grad_square(PLACEMENUX, y,250,78,button_down_color,button_up_color );
 			SDL_Surface *sText;
 			sText = TTF_RenderText_Blended( font, button_text.c_str(),button_text_color );
+			SDL_Rect text_label={SCRX-126-(sText->pitch/4)/2,y+26,0,0};
 			SDL_BlitSurface( sText,NULL, screen,&text_label );
 			SDL_FreeSurface( sText );
 		}
@@ -223,7 +262,7 @@ class Menu
 };
 class Game
 {
-    typedef struct 
+    typedef struct //for Undo
     {
          bool able;
          bool player;     
@@ -236,7 +275,7 @@ class Game
 		
 		public:
 
-			Uint16 spx,spy;
+			Uint16 spx,spy;// placement
 			bool placed,vertical;
 			void set_wall(Uint16 spx,Uint16 spy)
 			{
@@ -266,28 +305,28 @@ class Game
 			{
 				if (spy==0)
 				{
-					draw_square(spx*(squaresize+margins)-margins+360,60,margins,margins+2*squaresize,color );
-					SDL_UpdateRect(screen, spx*(squaresize+margins)-margins+360,60,margins,margins+2*squaresize);
+					draw_square(spx*(squaresize+margins)-margins+PLACEBOARDX,60,margins,margins+2*squaresize,color );
+					SDL_UpdateRect(screen, spx*(squaresize+margins)-margins+PLACEBOARDX,60,margins,margins+2*squaresize);
 				}
 				else
 				{
 					if (spy==9)
 					{
-						draw_square(spx*(squaresize+margins)-margins+360, squaresize*11+60+9*margins,margins,margins+2*squaresize,color );
-						SDL_UpdateRect(screen,spx*(squaresize+margins)-margins+360,squaresize*2+60+spy*(squaresize+margins),margins,margins+2*squaresize);
+						draw_square(spx*(squaresize+margins)-margins+PLACEBOARDX, squaresize*11+60+9*margins,margins,margins+2*squaresize,color );
+						SDL_UpdateRect(screen,spx*(squaresize+margins)-margins+PLACEBOARDX,squaresize*2+60+spy*(squaresize+margins),margins,margins+2*squaresize);
 					}
 					else
 					{
 					if (vertical)
 					{
-						draw_square(spx*(squaresize+margins)-margins+360, squaresize+60+spy*(squaresize+margins),margins,margins+2*squaresize,color );
-						SDL_UpdateRect(screen,spx*(squaresize+margins)-margins+360,squaresize+60+spy*(squaresize+margins),margins,margins+2*squaresize);
+						draw_square(spx*(squaresize+margins)-margins+PLACEBOARDX, squaresize+60+spy*(squaresize+margins),margins,margins+2*squaresize,color );
+						SDL_UpdateRect(screen,spx*(squaresize+margins)-margins+PLACEBOARDX,squaresize+60+spy*(squaresize+margins),margins,margins+2*squaresize);
 						
 					}
 					else
 					{
-						draw_square(spx*(squaresize+margins)+360, squaresize*2+60+spy*(squaresize+margins),margins+2*squaresize,margins,color );
-						SDL_UpdateRect(screen,spx*(squaresize+margins)+360,squaresize*2+60+spy*(squaresize+margins),margins+2*squaresize,margins);
+						draw_square(spx*(squaresize+margins)+PLACEBOARDX, squaresize*2+60+spy*(squaresize+margins),margins+2*squaresize,margins,color );
+						SDL_UpdateRect(screen,spx*(squaresize+margins)+PLACEBOARDX,squaresize*2+60+spy*(squaresize+margins),margins+2*squaresize,margins);
 					}
 					}
 				}
@@ -323,7 +362,7 @@ class Game
 				locy=10-desty;
 				wselected=-1;
 				locx=5;
-				entrypoint.x=360+4*margins+4*squaresize;
+				entrypoint.x=PLACEBOARDX+4*margins+4*squaresize;
 				entrypoint.y=squaresize+60+locy*(squaresize+margins);
 			}
 			Player(Uint16 sy){
@@ -331,13 +370,13 @@ class Game
 				reset_player();
 				if (sy==9)
 				{
-					playerlook=load_image( "resources//indx_crimson.png" );
-					playerlooksel=load_image( "resources//sel_indx_crimson.png" );
+					playerlook=load_image( "resources//crimson.png" );
+					playerlooksel=load_image( "resources//sel_crimson.png" );
 				}
 				else if (sy==1)
 				{
-					playerlook=load_image( "resources//indx_fawn.png" );
-					playerlooksel=load_image( "resources//sel_indx_fawn.png" );
+					playerlook=load_image( "resources//fawn.png" );
+					playerlooksel=load_image( "resources//sel_fawn.png" );
 				}
 			}
 
@@ -419,7 +458,9 @@ class Game
 					wselected=-1;
 				}
 				wselected=9-wselected;
+				draw_square((locx-1)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 				draw_player();
+				
 				
 				if (wselected==10){
 					make_around(enemy);
@@ -427,18 +468,17 @@ class Game
 				else{
 					del_around(enemy);
 				}
-				SDL_UpdateRect(screen, 0, 0, SCRX, SCRY);
 			}
 			void make_around(Player *enemy)
 			{
-				SDL_SetAlpha(playerlooksel, SDL_RLEACCEL|SDL_SRCALPHA, 80);
+				SetAlpha(playerlooksel,128);
 				if (can_left(enemy))
 				{
 					if (enemy->locx+1==this->locx && enemy->locy==this->locy)
 					{
 						if (enemy->can_left(this))
 						{
-							entrypoint.x=(locx-3)*(squaresize+margins)+360;
+							entrypoint.x=(locx-3)*(squaresize+margins)+PLACEBOARDX;
 							entrypoint.y=squaresize+60+(locy)*(squaresize+margins);
 							draw_player();
 						}
@@ -446,13 +486,13 @@ class Game
 						{
 							if (enemy->can_up(this))
 							{
-								entrypoint.x=(locx-2)*(squaresize+margins)+360;
+								entrypoint.x=(locx-2)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy-1)*(squaresize+margins);
 								draw_player();
 							}
 							if (enemy->can_down(this))
 							{
-								entrypoint.x=(locx-2)*(squaresize+margins)+360;
+								entrypoint.x=(locx-2)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy+1)*(squaresize+margins);
 								draw_player();
 							}
@@ -461,7 +501,7 @@ class Game
 					else
 					{
 						entrypoint.y=squaresize+60+(locy)*(squaresize+margins);
-						entrypoint.x=(locx-2)*(squaresize+margins)+360;
+						entrypoint.x=(locx-2)*(squaresize+margins)+PLACEBOARDX;
 						draw_player();
 					}
 				}
@@ -471,7 +511,7 @@ class Game
 					{
 						if (enemy->can_right(this))
 						{
-							entrypoint.x=(locx+1)*(squaresize+margins)+360;
+							entrypoint.x=(locx+1)*(squaresize+margins)+PLACEBOARDX;
 							entrypoint.y=squaresize+60+(locy)*(squaresize+margins);
 							draw_player();
 						}
@@ -479,13 +519,13 @@ class Game
 						{
 							if (enemy->can_up(this))
 							{
-								entrypoint.x=(locx)*(squaresize+margins)+360;
+								entrypoint.x=(locx)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy-1)*(squaresize+margins);
 								draw_player();
 							}
 							if (enemy->can_down(this))
 							{
-								entrypoint.x=(locx)*(squaresize+margins)+360;
+								entrypoint.x=(locx)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy+1)*(squaresize+margins);
 								draw_player();
 							}
@@ -494,7 +534,7 @@ class Game
 					else
 					{
 						entrypoint.y=squaresize+60+(locy)*(squaresize+margins);
-						entrypoint.x=(locx)*(squaresize+margins)+360;
+						entrypoint.x=(locx)*(squaresize+margins)+PLACEBOARDX;
 						draw_player();
 					}
 				}
@@ -504,7 +544,7 @@ class Game
 					{
 						if (enemy->can_up(this))
 						{
-							entrypoint.x=(locx-1)*(squaresize+margins)+360;
+							entrypoint.x=(locx-1)*(squaresize+margins)+PLACEBOARDX;
 							entrypoint.y=squaresize+60+(locy-2)*(squaresize+margins);
 							draw_player();
 						}
@@ -512,13 +552,13 @@ class Game
 						{
 							if (enemy->can_right(this))
 							{
-								entrypoint.x=(locx)*(squaresize+margins)+360;
+								entrypoint.x=(locx)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy-1)*(squaresize+margins);
 								draw_player();
 							}
 							if (enemy->can_left(this))
 							{
-								entrypoint.x=(locx-2)*(squaresize+margins)+360;
+								entrypoint.x=(locx-2)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy-1)*(squaresize+margins);
 								draw_player();
 							}
@@ -526,7 +566,7 @@ class Game
 					}
 					else
 					{
-						entrypoint.x=(locx-1)*(squaresize+margins)+360;
+						entrypoint.x=(locx-1)*(squaresize+margins)+PLACEBOARDX;
 						entrypoint.y=squaresize+60+(locy-1)*(squaresize+margins);
 						draw_player();
 					}
@@ -537,7 +577,7 @@ class Game
 					{
 						if (enemy->can_down(this))
 						{
-							entrypoint.x=(locx-1)*(squaresize+margins)+360;
+							entrypoint.x=(locx-1)*(squaresize+margins)+PLACEBOARDX;
 							entrypoint.y=squaresize+60+(locy+2)*(squaresize+margins);
 							draw_player();
 						}
@@ -545,13 +585,13 @@ class Game
 						{
 							if (enemy->can_right(this))
 							{
-								entrypoint.x=(locx)*(squaresize+margins)+360;
+								entrypoint.x=(locx)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy+1)*(squaresize+margins);
 								draw_player();
 							}
 							if (enemy->can_left(this))
 							{
-								entrypoint.x=(locx-2)*(squaresize+margins)+360;
+								entrypoint.x=(locx-2)*(squaresize+margins)+PLACEBOARDX;
 								entrypoint.y=squaresize+60+(locy+1)*(squaresize+margins);
 								draw_player();
 							}
@@ -559,15 +599,15 @@ class Game
 					}
 					else
 					{
-						entrypoint.x=(locx-1)*(squaresize+margins)+360;
+						entrypoint.x=(locx-1)*(squaresize+margins)+PLACEBOARDX;
 						entrypoint.y=squaresize+60+(locy+1)*(squaresize+margins);
 						draw_player();
 					}
 				}
-				entrypoint.x=(locx-1)*(squaresize+margins)+360;
+				entrypoint.x=(locx-1)*(squaresize+margins)+PLACEBOARDX;
 				entrypoint.y=squaresize+60+locy*(squaresize+margins);
-					
-				SDL_SetAlpha(playerlooksel, SDL_RLEACCEL|SDL_SRCALPHA, 255);
+				RestoreAlpha(playerlooksel,128);
+				
 			}
 			void del_around(Player *enemy)
 			{
@@ -577,23 +617,23 @@ class Game
 					{
 						if (enemy->can_left(this))
 						{
-							draw_square((locx-3)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+							draw_square((locx-3)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 						}
 						else
 						{
 							if (enemy->can_up(this))
 							{
-								draw_square((locx-2)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx-2)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 							if (enemy->can_down(this))
 							{
-								draw_square((locx-2)*(squaresize+margins)+360, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx-2)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 						}
 					}
 					else
 					{
-						draw_square((locx-2)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+						draw_square((locx-2)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 					}
 				}
 				if (can_right(enemy))
@@ -602,23 +642,23 @@ class Game
 					{
 						if (enemy->can_right(this))
 						{
-							draw_square((locx+1)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+							draw_square((locx+1)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 						}
 						else
 						{
 							if (enemy->can_up(this))
 							{
-								draw_square((locx)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 							if (enemy->can_down(this))
 							{
-								draw_square((locx)*(squaresize+margins)+360, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 						}
 					}
 					else
 					{
-						draw_square((locx)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+						draw_square((locx)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 					}
 				}
 				if (can_up(enemy))
@@ -627,23 +667,23 @@ class Game
 					{
 						if (enemy->can_up(this))
 						{
-							draw_square((locx-1)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-3)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+							draw_square((locx-1)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-3)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 						}
 						else
 						{
 							if (enemy->can_right(this))
 							{
-								draw_square((locx)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 							if (enemy->can_left(this))
 							{
-								draw_square((locx-2)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx-2)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 						}
 					}
 					else
 					{
-						draw_square((locx-1)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+						draw_square((locx-1)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-2)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 					}
 				}
 				if (can_down(enemy))
@@ -652,23 +692,23 @@ class Game
 					{
 						if (enemy->can_down(this))
 						{
-							draw_square((locx-1)*(squaresize+margins)+360, squaresize*2+margins+60+(locy+1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+							draw_square((locx-1)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy+1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 						}
 						else
 						{
 							if (enemy->can_right(this))
 							{
-								draw_square((locx)*(squaresize+margins)+360, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 							if (enemy->can_left(this))
 							{
-								draw_square((locx-2)*(squaresize+margins)+360, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+								draw_square((locx-2)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 							}
 						}
 					}
 					else
 					{
-						draw_square((locx-1)*(squaresize+margins)+360, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+						draw_square((locx-1)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 					}
 				}
 			}
@@ -702,7 +742,7 @@ class Game
 					{
 						if (enemy->can_up(this))
 						{
-							if (onsquare( x, y,(locx-1)*(squaresize+margins)+360,squaresize+60+(locy-2)*(squaresize+margins)))
+							if (onsquare( x, y,(locx-1)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy-2)*(squaresize+margins)))
 							{
 								return move(0,-2,lmove);
 							}
@@ -711,14 +751,14 @@ class Game
 						{
 							if (enemy->can_right(this))
 							{
-								if (onsquare( x, y,(locx)*(squaresize+margins)+360,squaresize+60+(locy-1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy-1)*(squaresize+margins)))
 								{
 									return move(1,-1,lmove);
 								}
 							}
 							if (enemy->can_left(this))
 							{
-								if (onsquare( x, y,(locx-2)*(squaresize+margins)+360,squaresize+60+(locy-1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx-2)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy-1)*(squaresize+margins)))
 								{
 									return move(-1,-1,lmove);
 								}
@@ -727,7 +767,7 @@ class Game
 					}
 					else
 					{
-						if (onsquare( x, y,(locx-1)*(squaresize+margins)+360,squaresize+60+(locy-1)*(squaresize+margins)))
+						if (onsquare( x, y,(locx-1)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy-1)*(squaresize+margins)))
 						{
 							return move(0,-1,lmove);
 						}
@@ -741,7 +781,7 @@ class Game
 					{
 						if (enemy->can_left(this))
 						{
-							if (onsquare( x, y,(locx-3)*(squaresize+margins)+360,squaresize+60+(locy)*(squaresize+margins)))
+							if (onsquare( x, y,(locx-3)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy)*(squaresize+margins)))
 							{
 								return move(-2,0,lmove);
 							}
@@ -750,14 +790,14 @@ class Game
 						{
 							if (enemy->can_up(this))
 							{
-								if (onsquare( x, y,(locx-2)*(squaresize+margins)+360,squaresize+60+(locy-1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx-2)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy-1)*(squaresize+margins)))
 								{
 									return move(-1,-1,lmove);
 								}
 							}
 							if (enemy->can_down(this))
 							{
-								if (onsquare( x, y,(locx-2)*(squaresize+margins)+360,squaresize+60+(locy+1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx-2)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy+1)*(squaresize+margins)))
 								{
 									return move(-1,1,lmove);
 								}
@@ -766,7 +806,7 @@ class Game
 					}
 					else
 					{
-						if (onsquare( x, y,(locx-2)*(squaresize+margins)+360,squaresize+60+(locy)*(squaresize+margins)))
+						if (onsquare( x, y,(locx-2)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy)*(squaresize+margins)))
 						{
 							return move(-1,0,lmove);
 						}
@@ -779,7 +819,7 @@ class Game
 					{
 						if (enemy->can_right(this))
 						{
-							if (onsquare( x, y,(locx+1)*(squaresize+margins)+360,squaresize+60+(locy)*(squaresize+margins)))
+							if (onsquare( x, y,(locx+1)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy)*(squaresize+margins)))
 							{
 								return move(2,0,lmove);
 							}
@@ -788,14 +828,14 @@ class Game
 						{
 							if (enemy->can_up(this))
 							{
-								if (onsquare( x, y,(locx)*(squaresize+margins)+360,squaresize+60+(locy-1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy-1)*(squaresize+margins)))
 								{
 									return move(1,-1,lmove);
 								}
 							}
 							if (enemy->can_down(this))
 							{
-								if (onsquare( x, y,(locx)*(squaresize+margins)+360,squaresize+60+(locy+1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy+1)*(squaresize+margins)))
 								{
 									return move(1,1,lmove);
 								}
@@ -804,7 +844,7 @@ class Game
 					}
 					else
 					{
-						if (onsquare( x, y,(locx)*(squaresize+margins)+360,squaresize+60+(locy)*(squaresize+margins)))
+						if (onsquare( x, y,(locx)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy)*(squaresize+margins)))
 						{
 							return move(1,0,lmove);
 						}
@@ -817,7 +857,7 @@ class Game
 					{
 						if (enemy->can_down(this))
 						{
-							if (onsquare( x, y,(locx-1)*(squaresize+margins)+360,squaresize+60+(locy+2)*(squaresize+margins)))
+							if (onsquare( x, y,(locx-1)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy+2)*(squaresize+margins)))
 							{
 								return move(0,2,lmove);
 							}
@@ -826,14 +866,14 @@ class Game
 						{
 							if (enemy->can_right(this))
 							{
-								if (onsquare( x, y,(locx)*(squaresize+margins)+360,squaresize+60+(locy+1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy+1)*(squaresize+margins)))
 								{
 									return move(1,1,lmove);
 								}
 							}
 							if (enemy->can_left(this))
 							{
-								if (onsquare( x, y,(locx-2)*(squaresize+margins)+360,squaresize+60+(locy+1)*(squaresize+margins)))
+								if (onsquare( x, y,(locx-2)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy+1)*(squaresize+margins)))
 								{
 									return move(-1,1,lmove);
 								}
@@ -842,7 +882,7 @@ class Game
 					}
 					else
 					{
-						if (onsquare( x, y,(locx-1)*(squaresize+margins)+360,squaresize+60+(locy+1)*(squaresize+margins)))
+						if (onsquare( x, y,(locx-1)*(squaresize+margins)+PLACEBOARDX,squaresize+60+(locy+1)*(squaresize+margins)))
 						{
 							return move(0,1,lmove);
 						}
@@ -850,19 +890,25 @@ class Game
 				}
 				return 0;
 			}
-
-			char move(char addx,char addy,movement *lmove)
+			void umove(char addx,char addy)
 			{
-				draw_square((locx-1)*(squaresize+margins)+360, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+				draw_square((locx-1)*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+(locy-1)*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 				locx+=addx;
 				locy+=addy;
+				entrypoint.x=(locx-1)*(squaresize+margins)+PLACEBOARDX;
+				entrypoint.y=squaresize+60+locy*(squaresize+margins);
+				draw_player();
+			}
+			char move(char addx,char addy,movement *lmove)
+			{
+                umove(addx,addy);
 				(*lmove).movex=-addx;
 				(*lmove).movey=-addy;
 				(*lmove).able=true;
 				(*lmove).player=true;
-				entrypoint.x=(locx-1)*(squaresize+margins)+360;
-				entrypoint.y=squaresize+60+locy*(squaresize+margins);
-				draw_player();
+				//entrypoint.x=(locx-1)*(squaresize+margins)+360;
+				//entrypoint.y=squaresize+60+locy*(squaresize+margins);
+				//draw_player();
 				wselected=-1;
 				if (locy==desty)//game end
 					return -1;
@@ -967,8 +1013,8 @@ class Game
 	}
 	bool wall_place(Uint16 mx,Uint16 my,Uint16 *spx,Uint16 *spy,bool *vertical)
 	{
-		//spx*(squaresize+margins)-margins+360, squaresize*2+60+spy*(squaresize+margins),margins,margins+2*squaresize
-		mx+=margins-360;
+		//spx*(squaresize+margins)-margins+PLACEBOARDX, squaresize*2+60+spy*(squaresize+margins),margins,margins+2*squaresize
+		mx+=margins-PLACEBOARDX;
 		*spx=mx/(squaresize+margins);
 		mx%=(squaresize+margins);
 		
@@ -1063,13 +1109,13 @@ class Game
 			Uint8 i,j;
 			for (j=0;j<9;j++)
 				for (i=0;i<9;i++)
-					draw_square(i*(squaresize+margins)+360, squaresize*2+margins+60+j*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
+					draw_square(i*(squaresize+margins)+PLACEBOARDX, squaresize*2+margins+60+j*(squaresize+margins),squaresize,squaresize,RGBtoInt(230,170,100) );
 			for (i=0;i<10;i++)
-				draw_square(i*(squaresize+margins)+360-margins, squaresize*2+margins+60,margins,squaresize*9+margins*8,RGBtoInt(190,130,60) );
+				draw_square(i*(squaresize+margins)+PLACEBOARDX-margins, squaresize*2+margins+60,margins,squaresize*9+margins*8,RGBtoInt(190,130,60) );
 			for (i=0;i<8;i++)
-				draw_square(360, i*(squaresize+margins)+squaresize*3+margins+60,squaresize*9+margins*8,margins,RGBtoInt(190,130,60) );
-			draw_square(360-margins,60,squaresize*9+margins*10,squaresize*2+margins,RGBtoInt(190,130,60) );
-			draw_square(360-margins,60+squaresize*11+margins*9,squaresize*9+margins*10,squaresize*2+margins,RGBtoInt(190,130,60) );
+				draw_square(PLACEBOARDX, i*(squaresize+margins)+squaresize*3+margins+60,squaresize*9+margins*8,margins,RGBtoInt(190,130,60) );
+			draw_square(PLACEBOARDX-margins,60,squaresize*9+margins*10,squaresize*2+margins,RGBtoInt(190,130,60) );
+			draw_square(PLACEBOARDX-margins,60+squaresize*11+margins*9,squaresize*9+margins*10,squaresize*2+margins,RGBtoInt(190,130,60) );
 			for( i=0;i<10;i++)
 				fawn->walls[i].draw_wall();
 			for( i=0;i<10;i++)
@@ -1085,7 +1131,7 @@ class Game
 		}
 		char which_wall(Uint16 x,bool turn)
 		{
-			x+=margins-360;
+			x+=margins-PLACEBOARDX;
 			char spx=x/(squaresize+margins);
 			x%=(squaresize+margins);
 			if (x<margins && spx>=0 && spx<=9)
@@ -1106,9 +1152,9 @@ class Game
 				if (lmove.player)
 				{
 					if (turn)
-						crimson->move(lmove.movex,lmove.movey,&lmove);
+						crimson->umove(lmove.movex,lmove.movey);
 					else
-						fawn->move(lmove.movex,lmove.movey,&lmove);
+						fawn->umove(lmove.movex,lmove.movey);
 				}
 				else
 				{
@@ -1293,7 +1339,7 @@ int main(int argc, char *argv[])
 	pixptr = (unsigned int*)screen->pixels;
 	TTF_Init();
 	SDL_WM_SetCaption( "Quoridor Game",NULL);
-	SDL_Surface *icon=IMG_Load("resources//corridor.png");
+	SDL_Surface *icon=load_image("resources//corridor.png");
 	SDL_WM_SetIcon(icon, NULL);
 	SDL_FreeSurface(icon);
 	SDL_UnlockSurface(screen);
@@ -1302,21 +1348,22 @@ int main(int argc, char *argv[])
 	Menu *main_menu= new Menu();
 	Uint16 menucevt;
 	
-	SDL_UpdateRect(screen, 2, 0, 250, SCRY);
+	SDL_UpdateRect(screen, PLACEMENUX, 40, 250, SCRY-42);
 	bool move_event_menu=false;
+	SDL_Event event;
 	while (1)
 	{
 		SDL_Delay(16);
-		SDL_Event event;
+		
 		while (SDL_PollEvent(&event)) 
 		{
 			switch (event.type) 
 			{
 				case SDL_MOUSEBUTTONUP:
 					//SDL_UnlockSurface(screen);
-					if(event.button.y>=42)
+					if(event.button.y>=40)
 					{
-						if (event.button.x<254)
+						if (event.button.x>=PLACEMENUX)
 						{
 							if (event.button.button==1)
 							{
@@ -1360,11 +1407,11 @@ int main(int argc, char *argv[])
 					break;
 				case SDL_MOUSEMOTION:
 					//SDL_UnlockSurface(screen);
-					if(event.motion.y>=42)
+					if(event.motion.y>=40)
 					{
 						if (actiontext->mouse_over)
 							actiontext->mouse_over=false;
-						if (event.motion.x<254)
+						if (event.motion.x>=PLACEMENUX)
 						{
 							main_menu->move_event(event.motion.y,actiontext);
 							move_event_menu=true;
@@ -1479,26 +1526,14 @@ SDL_Surface *load_image( std::string filename )
 {
     //The image that's loaded
 	SDL_Surface* loadedImage = NULL;
-    
-    //The optimized image that will be used
-	SDL_Surface* optimizedImage = NULL;
+
     
     //Load the image using SDL_image
 	loadedImage = IMG_Load( filename.c_str() );
     
     //If the image loaded
-	if( loadedImage != NULL )
-	{
-		SDL_SetColorKey(loadedImage, SDL_SRCCOLORKEY, SDL_MapRGB(loadedImage->format, 0, 0,0));
-        //Create an optimized image
-		optimizedImage = SDL_DisplayFormat( loadedImage );
-
-        
-        //Free the old image
-		SDL_FreeSurface( loadedImage );
-	}
     
     //Return the optimized image
-	return optimizedImage;
+	return loadedImage;
 }
 

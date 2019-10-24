@@ -1526,8 +1526,7 @@ SDL_Surface *load_image( std::string filename )
 {
     //The image that's loaded
 	SDL_Surface* loadedImage = NULL;
-    
-    //The optimized image that will be used
+
     
     //Load the image using SDL_image
 	loadedImage = IMG_Load( filename.c_str() );
