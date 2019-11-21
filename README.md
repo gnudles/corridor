@@ -28,3 +28,5 @@ $ sh build.sh
 
 
 if you have any further question, just ask :)
+
+note: hcorridor.cpp is the Hebrew version, ucorridor.cpp is the english version
