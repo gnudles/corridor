@@ -5,7 +5,7 @@ Branch   |[![Travis CI logo](pics/TravisCI.png)](https://travis-ci.org)
 `master` |[![Build Status](https://travis-ci.org/gnudles/Corridor.svg?branch=master)](https://travis-ci.org/gnudles/Corridor)
 `develop`|[![Build Status](https://travis-ci.org/gnudles/Corridor.svg?branch=develop)](https://travis-ci.org/gnudles/Corridor)
 
-Corridor is a C++ port of the board game 'Corridor',
+Corridor is a C++ port of the board game 'Quorridor',
 developed by [@gnudles](https://github.com/gnudles).
 
 There are two version:
