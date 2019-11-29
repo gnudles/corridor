@@ -19,7 +19,7 @@ services:
 script: 
   #- g++ ucorridor.cpp -o corridor -lSDL -lSDL_ttf -lSDL_image
   - qmake
-  - make
+  - make debug
   - ./corridor &
   - sleep 10
   # Code coverage
