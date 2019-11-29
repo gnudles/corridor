@@ -2,3 +2,6 @@ Makefile
 .qmake.stash
 corridor
 ucorridor.o
+Makefile.Debug
+Makefile.Release
+debug/
