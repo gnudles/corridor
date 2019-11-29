@@ -1,9 +1,9 @@
 # Corridor
 
-Branch   |[![Travis CI logo](pics/TravisCI.png)](https://travis-ci.org)
----------|-------------------------------------------------------------------------------------------------------------------------------------
-`master` |[![Build Status](https://travis-ci.org/gnudles/Corridor.svg?branch=master)](https://travis-ci.org/gnudles/Corridor)
-`develop`|[![Build Status](https://travis-ci.org/gnudles/Corridor.svg?branch=develop)](https://travis-ci.org/gnudles/Corridor)
+Branch   |[![Travis CI logo](pics/TravisCI.png)](https://travis-ci.org)                                                       |[![Codecov logo](pics/Codecov.png)](https://www.codecov.io)
+---------|--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------
+`master` |[![Build Status](https://travis-ci.org/gnudles/Corridor.svg?branch=master)](https://travis-ci.org/gnudles/Corridor) |[![codecov.io](https://codecov.io/github/gnudles/corridor/coverage.svg?branch=master)](https://codecov.io/github/gnudles/corridor/branch/master)
+`develop`|[![Build Status](https://travis-ci.org/gnudles/Corridor.svg?branch=develop)](https://travis-ci.org/gnudles/Corridor)|[![codecov.io](https://codecov.io/github/gnudles/corridor/coverage.svg?branch=develop)](https://codecov.io/github/gnudles/corridor/branch/develop)
 
 Corridor is a C++ port of the board game 'Quorridor',
 developed by [@gnudles](https://github.com/gnudles).
