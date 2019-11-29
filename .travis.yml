@@ -1,0 +1,33 @@
+language: cpp
+dist: bionic
+compiler: gcc
+
+install: 
+  - sudo apt update -qq
+  # Boost
+  - sudo apt install -qq libboost-all-dev
+  # SDL
+  - sudo apt-get install -qq libsdl-dev libsdl-ttf2.0-dev libsdl-image1.2-dev
+  # Codecov
+  - sudo pip install codecov
+  # OCLint
+  - ./scripts/install_oclint
+
+services:
+  - xvfb
+
+script: 
+  #- g++ ucorridor.cpp -o corridor -lSDL -lSDL_ttf -lSDL_image
+  - qmake
+  - make
+  - ./corridor &
+  - sleep 10
+  # Code coverage
+  - ./scripts/get_code_cov
+  - codecov
+  # OCLint
+  - ./scripts/do_oclint
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
