@@ -1,2 +1,4 @@
 Makefile
 .qmake.stash
+corridor
+ucorridor.o

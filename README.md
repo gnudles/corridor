@@ -8,6 +8,8 @@ Branch   |[![Travis CI logo](pics/TravisCI.png)](https://travis-ci.org)         
 Corridor is a C++ port of the board game 'Quorridor',
 developed by [@gnudles](https://github.com/gnudles).
 
+![](pics/20191129.png)
+
 There are two version:
 
  * `ucorridor.cpp` is the English version
